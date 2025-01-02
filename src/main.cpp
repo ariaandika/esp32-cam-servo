@@ -5,31 +5,40 @@
 #include "DNSServer.h"
 
 #include "Arduino.h"
-// #include "Hello.cpp"
-#include "LibWiFi.cpp"
-#include "EspCam.cpp"
-// #include "Example.cpp"
+
+#include "WiFiIo.cpp"
+#include "ButtonIo.cpp"
+#include "ServoIo.cpp"
+#include "CameraIo.cpp"
+#include "HttpIo.cpp"
 
 void setup() {
-    delay(800);
-
     Serial.begin(9600);
-    Serial.println("Init");
+    Serial.println("[APP] init");
 
-    // hello_setup();
-    wifi_setup();
-
-    espcam_setup();
-    // example_setup();
+    button_setup();
+    // servo_setup();
+    // wifi_setup();
+    // camera_setup();
+    camera_mb_setup();
 }
 
 void loop() {
-    Serial.println("loop");
+    // Serial.println("[APP] loop");
 
-    // hello_loop();
-    camera_capture();
+    button_loop();
+    // button_debug();
 
-    // example_loop();
-    delay(2000);
+    if (button_is_pressed()) {
+        // camera_fb_t* fb = esp_camera_fb_get();
+        //
+        // http_send(fb->buf, fb->len);
+        //
+        // esp_camera_fb_return(fb);
+
+        camera_mb_toggle();
+    }
+
+    delay(200);
 }
 
