@@ -1,10 +1,13 @@
 import type { ServerWebSocket } from "bun";
 import { networkInterfaces } from "os"
 
-// requires python
-import '@tensorflow/tfjs-node';
 import * as canvasapi from 'canvas';
 import * as faceapi from 'face-api.js';
+
+// requires python
+if (!Bun.env["AI"] || Bun.env["AI"] != "0") {
+  await import('@tensorflow/tfjs-node');
+}
 
 export type WsUpgrade = { addr: string, topics: Set<string> };
 
@@ -50,7 +53,7 @@ let state: State = {
 // await setup_facerecog();
 
 const server = Bun.serve({
-  hostname: get_ip(),
+  hostname: Bun.env["HOST"] || get_ip(),
   idleTimeout: 255,
 
   async fetch(request, server) {

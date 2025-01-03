@@ -6,7 +6,8 @@ export class WsController {
   promise: Promise<unknown> = $state(new Promise(()=>{}));
   state: State = $state({} as any);
 
-  private static HOST = "http://localhost:3000" as const;
+  // private static HOST = "http://localhost:3000" as const;
+  private static HOST = "http://192.168.10.82:3000" as const;
   private ws: WebSocket = {} as any;
   private path: string
 
@@ -129,7 +130,7 @@ export class GeoController {
 
     <section>
       {#await ws.promise}
-        <div>loading...</div>
+        <div>loading websocket...</div>
       {:then}
         <pre>{JSON.stringify(ws.state,null,2)}</pre>
       {:catch err}
