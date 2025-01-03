@@ -1,13 +1,13 @@
 <script>
   import Admin from "./Admin.svelte"
-  import Simulate from "./Simulate.svelte"
+  import Debug from "./Debug.svelte";
 
   const pathname = location.pathname;
 
 </script>
 
 {#if pathname == "/debug"}
-  <Simulate/>
+  <Debug/>
 {:else}
   <Admin/>
 {/if}
