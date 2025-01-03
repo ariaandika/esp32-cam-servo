@@ -3,7 +3,6 @@
 #include "ESP32Servo.cpp"
 
 int degree = 0;
-int direction = 0;
 
 Servo servo;
 
@@ -15,19 +14,15 @@ void servo_setup() {
     servo.write(degree);
 }
 
-void servo_debug() {
-    if (degree == 180) {
-        direction = -1;
-    } else if (degree == 0) {
-        direction = 1;
-    }
+void servo_toggle(bool open) {
+    servo.write(open ? 90 : 0);
+}
 
-    degree += 90 * direction;
+void servo_debug() {
+    degree = degree == 90 ? 0 : degree + 45;
+    servo.write(degree);
 
     Serial.print("[SERVO] ");
     Serial.println(degree);
-}
-
-void servo_loop() {
 }
 
