@@ -15,9 +15,49 @@
 #include "HttpIo.cpp"
 #include "WebSocketIo.cpp"
 
+#define FLASH_PIN 4
+
+bool enable_flash = false;
+
+void capture() {
+    if (true) {
+        JsonDocument json;
+        json["id"] = "img";
+        JsonDocument value;
+        value["kind"] = "attempt";
+        json["value"] = value;
+        String data;
+        serializeJson(json ,data);
+        websocket_send(data);
+    }
+
+    if (enable_flash) {
+        digitalWrite(FLASH_PIN, HIGH);
+    }
+
+    camera_fb_t* fb = esp_camera_fb_get();
+
+    // of by one error
+    // https://github.com/espressif/arduino-esp32/issues/6047
+    esp_camera_fb_return(fb);
+    fb = esp_camera_fb_get();
+
+    if (enable_flash) {
+        digitalWrite(FLASH_PIN, LOW);
+    }
+
+    if (!fb) {
+        Serial.println("[CAMERA] capture failed");
+    } else {
+        http_send(fb->buf, fb->len);
+    }
+
+    esp_camera_fb_return(fb);
+}
+
 void onmessage(uint8_t* buf, size_t len) {
-    JsonDocument json;
-    DeserializationError err = deserializeJson(json, buf, len);
+    JsonDocument message;
+    DeserializationError err = deserializeJson(message, buf, len);
 
     if (err) {
         Serial.print("[WEBSOCKET] JsonError: ");
@@ -25,26 +65,43 @@ void onmessage(uint8_t* buf, size_t len) {
         return;
     }
 
-    const char* event_kind = json["kind"];
+    String id = message["id"];
+    JsonDocument value = message["value"];
 
-    JsonDocument value = json["value"];
-    bool door = value["door"];
+    Serial.print("[WEBSOCKET] id: ");
+    Serial.print(id);
 
-    Serial.print("[APP] door: ");
-    Serial.print(door);
+    if (id == "door") {
+        String kind = value["kind"];
+        Serial.println(kind);
+
+        if (kind == "sync") {
+            JsonDocument state = value["value"];
+            bool door = state["open"];
+            servo_toggle(door);
+
+            Serial.print("[APP] door: ");
+            Serial.print(door);
+            Serial.println();
+        }
+    }
+
+    else if (id == "mcu") {
+        String kind = value["kind"];
+
+        if (kind == "sync") {
+            JsonDocument state = value["value"];
+            enable_flash = state["flash"];
+            Serial.print(" flash: ");
+            Serial.print(enable_flash);
+        }
+
+        else if (kind == "capture") {
+            capture();
+        }
+    }
+
     Serial.println();
-
-    servo_toggle(door);
-}
-
-void toggle_door() {
-    JsonDocument json;
-    json["kind"] = "door:toggle";
-
-    String data;
-    serializeJson(json ,data);
-
-    websocket_send(data);
 }
 
 void setup() {
@@ -52,30 +109,33 @@ void setup() {
     Serial.setDebugOutput(true);
     Serial.println("[APP] init");
 
+    pinMode(FLASH_PIN, OUTPUT);
+
+    camera_setup();
     button_setup();
     servo_setup();
     wifi_setup();
-    // camera_setup();
-    // camera_mb_setup();
     websocket_setup(onmessage);
 }
 
 void loop() {
-    // Serial.println("[APP] loop");
-
     websocket_loop();
     button_loop();
 
     if (button_is_pressed()) {
-        toggle_door();
-
-        // camera_fb_t* fb = esp_camera_fb_get();
-        //
-        // http_send(fb->buf, fb->len);
-        //
-        // esp_camera_fb_return(fb);
-
-        // camera_mb_toggle();
+        Serial.println("Press");
+        if (is_door_open()) {
+            JsonDocument json;
+            json["id"] = "door";
+            JsonDocument value;
+            value["kind"] = "close";
+            json["value"] = value;
+            String data;
+            serializeJson(json ,data);
+            websocket_send(data);
+        } else {
+            capture();
+        }
     }
 }
 

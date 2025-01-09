@@ -15,7 +15,12 @@ void servo_setup() {
 }
 
 void servo_toggle(bool open) {
-    servo.write(open ? 90 : 0);
+    degree = open ? 90 : 0;
+    servo.write(degree);
+}
+
+int is_door_open() {
+    return degree == 90;
 }
 
 void servo_debug() {

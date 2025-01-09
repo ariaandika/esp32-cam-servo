@@ -19,7 +19,7 @@ void camera_setup(){
         err = esp_camera_init(&camera_config);
     }
 
-    Serial.print("[CAMERA] setup ok");
+    Serial.println("[CAMERA] setup ok");
 }
 
 void camera_mb_setup() {

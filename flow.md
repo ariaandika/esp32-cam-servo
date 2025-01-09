@@ -43,3 +43,20 @@ web browser request to server on `/`
 
 connect to websocket on `/ws`
 
+## MyTable
+
+Mc to Server
+
+Microcontroller
+---
+btn click send image
+btn click door close
+
+Mc from Server
+
+Server
+---
+Door close
+Flash toggle
+
+
