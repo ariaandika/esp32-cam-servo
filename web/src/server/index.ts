@@ -37,6 +37,9 @@ const app = {
     }
 
     req.URL = new URL(req.url);
+    if (req.URL.pathname.startsWith("/api")) {
+      req.URL.pathname = req.URL.pathname.slice("/api".length);
+    }
     console.log("[APP]",req.URL.pathname)
 
     const handle = server.router.match(req)
