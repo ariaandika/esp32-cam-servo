@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "server": "bun src/server.ts",
+    "server": "bun ./src/server/index.ts",
     "build": "vite build",
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json"
@@ -15,6 +15,7 @@
     "@tailwindcss/vite": "^4.0.0-beta.8",
     "@tsconfig/svelte": "^5.0.4",
     "@types/bun": "^1.1.14",
+    "@vladmandic/face-api": "^1.7.14",
     "svelte": "^5.15.0",
     "svelte-check": "^4.1.1",
     "tailwindcss": "^4.0.0-beta.8",
@@ -22,8 +23,6 @@
     "vite": "^6.0.5"
   },
   "dependencies": {
-    "@tensorflow/tfjs-node": "^4.22.0",
-    "canvas": "^3.0.1",
-    "face-api.js": "^0.22.2"
+    "@vladmandic/human": "^3.3.4"
   }
 }

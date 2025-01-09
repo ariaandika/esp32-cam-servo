@@ -1,15 +1,7 @@
-<script>
-  import Admin from "./Admin.svelte"
-  import Debug from "./Debug.svelte";
-
-  const pathname = location.pathname;
-
+<script lang="ts">
+import Page from "./Page.svelte"
 </script>
 
-{#if pathname == "/debug"}
-  <Debug/>
-{:else}
-  <Admin/>
-{/if}
+<Page/>
 
 

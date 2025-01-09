@@ -1,4 +1,18 @@
 @import "tailwindcss";
 
-@utility btn { @apply px-3 py-2 bg-indigo-500 active:bg-indigo-600 text-white font-bold cursor-pointer rounded-md; }
+@layer base {
+  html, body {
+    @apply min-h-screen bg-gray-200;
+  }
+}
+
+@utility btn {
+  @apply px-3 py-2
+    bg-indigo-500 active:bg-indigo-600 text-white font-bold
+    cursor-pointer rounded-md;
+}
+
+@utility section-title {
+  @apply mb-6 font-bold text-2xl border-b-2 border-gray-300;
+}
 
