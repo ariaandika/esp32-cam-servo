@@ -1,29 +1,10 @@
 import type { Server, WebSocketServeOptions } from "bun";
-import { EventBus2, type Message } from "../shared";
+import { EventBus, type Message } from "../shared";
+import wsctr, { type WsData } from "./ws"
 import routes, { HttpBus } from "./http"
 import os from "os"
-import wsctr, { type WsData } from "./ws"
 
-export class Bus extends EventBus2 {
-  server: Server;
-
-  get url() {
-    return this.server.url;
-  }
-
-  constructor(app: WebSocketServeOptions<WsData>) {
-    super();
-    this.server = Bun.serve(app);
-    this.server.router = new HttpBus();
-    this.server.bus = this;
-  }
-
-  publish(data: Message): void {
-    this.server.publish(data.id, JSON.stringify(data));
-  }
-}
-
-const app = {
+const APP = {
   hostname: Bun.env["HOST"] || getIp(),
 
   async fetch(req, server) {
@@ -37,9 +18,12 @@ const app = {
     }
 
     req.URL = new URL(req.url);
+
+    // a workaround for api gateway
     if (req.URL.pathname.startsWith("/api")) {
       req.URL.pathname = req.URL.pathname.slice("/api".length);
     }
+
     console.log("[APP]",req.URL.pathname)
 
     const handle = server.router.match(req)
@@ -51,9 +35,10 @@ const app = {
     idleTimeout: 60 * 10,
 
     open(ws) {
-      console.write("[WEBSOCKET] open " + ws.remoteAddress + " [ ");
-      ws.data.topics.forEach(e => console.write(e + ", "));
-      console.log("]");
+      console.log(
+        "[WEBSOCKET] open", ws.remoteAddress,
+        "[", ws.data.topics.join(", "), "]",
+      );
 
       ws.data.topics.forEach(ws.subscribe.bind(ws));
       ws.data.topics.forEach(
@@ -80,11 +65,30 @@ const app = {
   }
 } satisfies WebSocketServeOptions<WsData>;
 
+export class Bus extends EventBus {
+  server: Server;
+
+  get url() {
+    return this.server.url;
+  }
+
+  constructor() {
+    super();
+    this.server = Bun.serve(APP);
+    this.server.router = new HttpBus();
+    this.server.bus = this;
+  }
+
+  publish(data: Message): void {
+    this.server.publish(data.id, JSON.stringify(data));
+  }
+}
+
 (() => {
   console.debug = function(...any) {
     // console.log(...any)
   }
-  const bus = new Bus(app);
+  const bus = new Bus();
   routes.forEach(e => new e(bus.server.router));
   wsctr.forEach(e => new e(bus));
   console.log("[APP] Listening in", bus.url.toJSON());

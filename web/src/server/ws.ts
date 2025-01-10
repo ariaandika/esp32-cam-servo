@@ -1,14 +1,16 @@
 import type { DoorMessage, DoorState, ImgMessage, McuMessage, McuState } from "../shared/controllers";
-import type { EventBus2 } from "../shared";
+import type { EventBus } from "../shared";
+import type { Server } from "bun";
 
 export interface WsData {
   topics: string[]
-  bus: EventBus2
+  server: Server
+  bus: EventBus
   isMc: boolean
 }
 
 export abstract class Controller<State,Message> {
-  constructor(protected bus: EventBus2) {
+  constructor(protected bus: EventBus) {
     bus.on("publish:"+this.getId(), ws => ws.send(JSON.stringify({
       id: this.getId(),
       value: {
@@ -124,4 +126,4 @@ export class ImgServer extends Controller<{}, ImgMessage> {
 
 }
 
-export default [ DoorServer, McuServer, ImgServer ] satisfies ({ new (bus: EventBus2): any })[]
+export default [ DoorServer, McuServer, ImgServer ] satisfies ({ new (bus: EventBus): any })[]

@@ -1,6 +1,6 @@
-import { EventBus2, type Message } from "../shared";
+import { EventBus, type Message } from "../shared";
 
-export class WsController extends EventBus2 {
+export class WsController extends EventBus {
   promise: Promise<unknown> = $state(new Promise(()=>{}));
 
   private ws: WebSocket;

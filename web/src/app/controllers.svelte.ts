@@ -1,9 +1,9 @@
 import type { DoorMessage, DoorState, ImgMessage, McuMessage, McuState } from "../shared/controllers"
-import type { EventBus2 } from "../shared"
+import type { EventBus } from "../shared"
 import { FaceApi } from "./face";
 
 export abstract class Controller<T, M> {
-  constructor(protected bus: EventBus2) {
+  constructor(protected bus: EventBus) {
     bus.on(this.getId(), message => {
       if ("kind" in message && message.kind == "sync") {
         this.setState(message.value);
@@ -70,7 +70,7 @@ export class ImgClient extends Controller<{}, ImgMessage> {
   getState() { return {} }
   setState(_: {}) { }
 
-  constructor(bus: EventBus2, private faceapi: FaceApi) {
+  constructor(bus: EventBus, private faceapi: FaceApi) {
     super(bus);
     this.canvas = document.createElement("canvas");
     this.canvas.width = 800;
@@ -102,6 +102,7 @@ export class ImgClient extends Controller<{}, ImgMessage> {
         if (res.index == -1) {
           this.state = "wajah tidak dikenali"
         } else {
+          console.log(res)
           if (res.similarity > 0.5) {
             this.state = "berhasil"
             this.bus.publish({

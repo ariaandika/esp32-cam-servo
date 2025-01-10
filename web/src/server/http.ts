@@ -1,8 +1,8 @@
-import type { Server } from "bun";
-import fs from "fs"
-import { ImgServer } from "./ws";
 import type { ImgMessage } from "../shared/controllers";
-// import faceapi from "./face"
+import type { Server } from "bun";
+import type { WsData } from "./ws";
+import fs from "fs"
+import path from "path"
 
 export type Handle = (req: Request, server: Server) => ((void | Response) | Promise<void | Response>);
 
@@ -32,24 +32,25 @@ export abstract class HttpController {
 }
 
 export class WsUpgrade extends HttpController {
-  match(path: string): Handle | void {
+  match(path: string) {
     if (path == "/ws") {
       return this.upgrade.bind(this);
     }
   }
 
-  upgrade(req: Request, server: import("bun").Server) {
+  upgrade(req: Request, server: Server) {
     const topics = req.URL.searchParams.entries()
       .filter(([key]) => key == "t")
       .map(([_,val]) => val)
       .toArray();
 
-    const isMc = req.URL.searchParams.get("mc");
+    const isMc = Boolean(req.URL.searchParams.get("mc"));
 
-    const ok = server.upgrade(req, {
+    const ok = server.upgrade<WsData>(req, {
       data: {
         topics,
         isMc,
+        server,
         bus: server.bus,
       }
     });
@@ -59,10 +60,16 @@ export class WsUpgrade extends HttpController {
 }
 
 export class FaceApi extends HttpController {
+  private static IMG_PATH_PREFIX = Bun.env["IMG_PATH_PREFIX"] || "public"
+  private static VEC_PATH_PREFIX = Bun.env["VEC_PATH_PREFIX"] || "public"
+
+  private static IMG_PATH = path.join(FaceApi.IMG_PATH_PREFIX,"./.tmp");
+  private static VEC_PATH = path.join(FaceApi.VEC_PATH_PREFIX,"./.vec");
+
   constructor(bus: HttpBus) {
     super(bus);
-    fs.mkdirSync("public/.tmp",{ recursive: true });
-    fs.mkdirSync("public/.vec",{ recursive: true });
+    fs.mkdirSync(FaceApi.IMG_PATH, { recursive: true });
+    fs.mkdirSync(FaceApi.VEC_PATH, { recursive: true });
   }
 
   match(path: string, req: Request): Handle | void {
@@ -85,27 +92,24 @@ export class FaceApi extends HttpController {
 
   async pictAttempt(req: Request, server: Server) {
     const img = await req.arrayBuffer();
-    // await Bun.write("public/.tmp/current.jpg", img);
     server.publish("imgbin", img);
     return new Response();
   }
 
   async listRegistered(req: Request) {
     if (req.headers.get("accept") == "application/json") {
-      const ls = fs.readdirSync("public/.vec")
-      const vecs = ls.map(e => {
-        return {
-          name: e,
-          value: JSON.parse(fs.readFileSync("public/.vec/" + e,"utf8"))
-        }
-      });
+      const vecs = fs.readdirSync(FaceApi.VEC_PATH)
+        .map(name => ({
+          name,
+          value: JSON.parse(fs.readFileSync(FaceApi.VEC_PATH + "/" + name, "utf8"))
+        }));
       return Response.json({ desc: vecs },{
         headers: {
           "Access-Control-Allow-Origin": "*"
         }
       });
     }
-    const ls = fs.readdirSync("public/.tmp")
+    const ls = fs.readdirSync(FaceApi.IMG_PATH)
     return Response.json({ images: ls },{
       headers: {
         "Access-Control-Allow-Origin": "*"
@@ -117,10 +121,11 @@ export class FaceApi extends HttpController {
     const id = req.URL.searchParams.get("id");
     if (!id) return new Response()
     try {
-      fs.rmSync(`public${id}`)
-      fs.rmSync(`public${id.replace(".tmp",".vec")}`)
-      console.log(`public${id.replace(".tmp",".vec")}`)
-    } catch (err) { }
+      fs.rmSync(FaceApi.IMG_PATH_PREFIX + id)
+      fs.rmSync(FaceApi.VEC_PATH_PREFIX + id.replace(".tmp",".vec"))
+    } catch (err) {
+      console.error("[FACE_API] failed to remove",id,":",err)
+    }
     return new Response()
   }
 
@@ -132,14 +137,14 @@ export class FaceApi extends HttpController {
       const buf = form.get("img") as Blob;
 
       const id = Date.now();
-      await Bun.write("./public/.vec/"+id+".json",JSON.stringify(vec));
-      await Bun.write("./public/.tmp/"+id+".png",buf);
+      await Bun.write(FaceApi.IMG_PATH + "/" + id + ".png", buf);
+      await Bun.write(FaceApi.VEC_PATH + "/" + id + ".json", JSON.stringify(vec));
 
       server.bus.publish({ id: "img", value: { kind: "register" } satisfies ImgMessage });
       return new Response(void 0,{ headers: { "Access-Control-Allow-Origin": "*" } })
     } catch (err) {
-      console.error(err)
-      return Response.json("Internal Error", { status: 500 })
+      console.error("[FACE_API] failed to register:", err)
+      return Response.error()
     }
   }
 
