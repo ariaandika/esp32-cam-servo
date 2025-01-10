@@ -2,6 +2,8 @@
 
 // https://github.com/espressif/esp32-camera/blob/master/examples/camera_example/main/take_picture.c
 
+// AiThinker Camera
+
 #define CAM_PIN_PWDN 32
 #define CAM_PIN_RESET -1
 #define CAM_PIN_XCLK 0

@@ -13,17 +13,6 @@ void button_setup() {
     button_last_state = digitalRead(BTN_PIN);
 }
 
-void button_debug() {
-    Serial.print("[BUTTON] ");
-    Serial.print("raw state: ");
-    Serial.print(digitalRead(BTN_PIN));
-    Serial.print(", pressed: ");
-    Serial.print(button_state);
-    Serial.print(", held: ");
-    Serial.print(button_held);
-    Serial.println();
-}
-
 void button_loop() {
     int current = !digitalRead(BTN_PIN);
 
@@ -45,5 +34,16 @@ void button_loop() {
 
 int button_is_pressed() {
     return button_state;
+}
+
+void button_debug() {
+    Serial.print("[BUTTON] ");
+    Serial.print("raw state: ");
+    Serial.print(digitalRead(BTN_PIN));
+    Serial.print(", pressed: ");
+    Serial.print(button_state);
+    Serial.print(", held: ");
+    Serial.print(button_held);
+    Serial.println();
 }
 

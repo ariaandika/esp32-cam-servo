@@ -7,11 +7,11 @@ void http_send(uint8_t* buf, size_t len) {
 
     client.begin(URL);
 
-    int httpResponseCode = client.POST(buf, len);
+    int responseCode = client.POST(buf, len);
 
-    if (httpResponseCode > 0) {
+    if (responseCode > 0) {
         Serial.print("[HTTP] Response code: ");
-        Serial.println(httpResponseCode);
+        Serial.println(responseCode);
 
         String payload = client.getString();
         Serial.print("[HTTP] Response: ");
@@ -19,7 +19,7 @@ void http_send(uint8_t* buf, size_t len) {
 
     } else {
         Serial.print("[HTTP] Error: ");
-        Serial.println(httpResponseCode);
+        Serial.println(responseCode);
     }
 
     client.end();

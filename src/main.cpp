@@ -17,21 +17,15 @@
 
 #define FLASH_PIN 4
 
-bool enable_flash = false;
+bool flash_enabled = false;
+
+String door_close_message;
+String attempt_message;
 
 void capture() {
-    if (true) {
-        JsonDocument json;
-        json["id"] = "img";
-        JsonDocument value;
-        value["kind"] = "attempt";
-        json["value"] = value;
-        String data;
-        serializeJson(json ,data);
-        websocket_send(data);
-    }
+    websocket_send(attempt_message);
 
-    if (enable_flash) {
+    if (flash_enabled) {
         digitalWrite(FLASH_PIN, HIGH);
     }
 
@@ -42,13 +36,15 @@ void capture() {
     esp_camera_fb_return(fb);
     fb = esp_camera_fb_get();
 
-    if (enable_flash) {
+    if (flash_enabled) {
         digitalWrite(FLASH_PIN, LOW);
     }
 
     if (!fb) {
         Serial.println("[CAMERA] capture failed");
     } else {
+        Serial.print("[CAMERA] capture ok, size: ");
+        Serial.println(fb->len);
         http_send(fb->buf, fb->len);
     }
 
@@ -68,21 +64,18 @@ void onmessage(uint8_t* buf, size_t len) {
     String id = message["id"];
     JsonDocument value = message["value"];
 
-    Serial.print("[WEBSOCKET] id: ");
-    Serial.print(id);
+    Serial.print("[WEBSOCKET] message id: ");
+    Serial.println(id);
 
     if (id == "door") {
         String kind = value["kind"];
-        Serial.println(kind);
 
         if (kind == "sync") {
             JsonDocument state = value["value"];
             bool door = state["open"];
             servo_toggle(door);
-
             Serial.print("[APP] door: ");
-            Serial.print(door);
-            Serial.println();
+            Serial.println(door);
         }
     }
 
@@ -91,23 +84,35 @@ void onmessage(uint8_t* buf, size_t len) {
 
         if (kind == "sync") {
             JsonDocument state = value["value"];
-            enable_flash = state["flash"];
-            Serial.print(" flash: ");
-            Serial.print(enable_flash);
+            flash_enabled = state["flash"];
+            Serial.print("[APP] flash: ");
+            Serial.println(flash_enabled);
         }
 
         else if (kind == "capture") {
             capture();
         }
     }
+}
 
-    Serial.println();
+void setup_messages() {
+    JsonDocument json;
+    JsonDocument value;
+    json["value"] = value;
+
+    json["id"] = "door";
+    value["kind"] = "close";
+    serializeJson(json, door_close_message);
+
+    json["id"] = "img";
+    value["kind"] = "attempt";
+    serializeJson(json, attempt_message);
 }
 
 void setup() {
     Serial.begin(115200);
-    Serial.setDebugOutput(true);
     Serial.println("[APP] init");
+    // Serial.setDebugOutput(true);
 
     pinMode(FLASH_PIN, OUTPUT);
 
@@ -116,6 +121,8 @@ void setup() {
     servo_setup();
     wifi_setup();
     websocket_setup(onmessage);
+
+    setup_messages();
 }
 
 void loop() {
@@ -123,16 +130,8 @@ void loop() {
     button_loop();
 
     if (button_is_pressed()) {
-        Serial.println("Press");
         if (is_door_open()) {
-            JsonDocument json;
-            json["id"] = "door";
-            JsonDocument value;
-            value["kind"] = "close";
-            json["value"] = value;
-            String data;
-            serializeJson(json ,data);
-            websocket_send(data);
+            websocket_send(door_close_message);
         } else {
             capture();
         }

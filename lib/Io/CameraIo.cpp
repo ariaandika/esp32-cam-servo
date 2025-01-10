@@ -2,26 +2,21 @@
 #include "CameraIoInit.cpp"
 
 void camera_setup(){
-    //power up the camera if PWDN pin is defined
-    // if(CAM_PIN_PWDN != -1){
-    //     pinMode(CAM_PIN_PWDN, OUTPUT);
-    //     digitalWrite(CAM_PIN_PWDN, LOW);
-    // }
-
     esp_err_t err = esp_camera_init(&camera_config);
 
     while (err != ESP_OK) {
         Serial.print("[CAMERA] setup failed: ");
         Serial.println(err, HEX);
-        Serial.println("[CAMERA] retrying in 3 seconds...");
+        Serial.println("[CAMERA] retrying...");
 
-        delay(3000);
+        delay(1000);
         err = esp_camera_init(&camera_config);
     }
 
     Serial.println("[CAMERA] setup ok");
 }
 
+// esp32 cam uploader built in led
 void camera_mb_setup() {
     pinMode(33, OUTPUT);
     digitalWrite(33, LOW);
@@ -35,7 +30,7 @@ void camera_mb_toggle() {
 }
 
 // typedef struct {
-//     uint8_t * buf;              /*!< Pointer to the pixel data */
+//     uint8_t* buf;              /*!< Pointer to the pixel data */
 //     size_t len;                 /*!< Length of the buffer in bytes */
 //     size_t width;               /*!< Width of the buffer in pixels */
 //     size_t height;              /*!< Height of the buffer in pixels */
@@ -51,11 +46,9 @@ esp_err_t camera_debug() {
         return ESP_FAIL;
     }
 
-    // fb->width, fb->height, fb->format, fb->buf, fb->len;
-    Serial.print("[CAMERA] Capture OK, width: ");
-    Serial.println(fb->width);
+    Serial.print("[CAMERA] Capture OK, size: ");
+    Serial.println(fb->len);
 
-    //return the frame buffer back to the driver for reuse
     esp_camera_fb_return(fb);
     return ESP_OK;
 }
